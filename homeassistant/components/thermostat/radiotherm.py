@@ -7,13 +7,16 @@ Config:
 thermostat:
     platform: radiotherm
     hold_temp: boolean to control if hass temp adjustments hold(True) or are
-    temporary(False)
+        temporary(False) (default: False)
+    away_delta: number of degrees to change target temperature  when 'away'
+        (default: 10)
     host: list of thermostat host/ips to control
 
 Example:
 thermostat:
     platform: radiotherm
     hold_temp: True
+    away_delta: 5
     host:
         - 192.168.99.137
         - 192.168.99.202
@@ -21,7 +24,8 @@ thermostat:
 Configure two thermostats via the configuration.yaml.  Temperature settings
 sent from hass will be sent to thermostat and then hold at that temp.  Set
 to False if you set a thermostat schedule on the tstat itself and just want
-hass to send temporary temp changes.
+hass to send temporary temp changes.  If Away mode is triggered, change target
+temp by 5 degrees.
 
 """
 import logging
@@ -35,6 +39,7 @@ from homeassistant.const import (CONF_HOST, TEMP_FAHRENHEIT)
 REQUIREMENTS = ['radiotherm==1.2']
 
 HOLD_TEMP = 'hold_temp'
+AWAY_DELTA = 'away_delta'
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
@@ -54,12 +59,13 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         return
 
     hold_temp = config.get(HOLD_TEMP, False)
+    away_delta = config.get(AWAY_DELTA, 10)
     tstats = []
 
     for host in hosts:
         try:
             tstat = radiotherm.get_thermostat(host)
-            tstats.append(RadioThermostat(tstat, hold_temp))
+            tstats.append(RadioThermostat(tstat, hold_temp, away_delta))
         except (URLError, OSError):
             logger.exception(
                 "Unable to connect to Radio Thermostat: %s", host)
@@ -70,7 +76,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class RadioThermostat(ThermostatDevice):
     """ Represent a Radio Thermostat. """
 
-    def __init__(self, device, hold_temp):
+    def __init__(self, device, hold_temp, away_delta):
         self.device = device
         self.set_time()
         self._target_temperature = None
@@ -78,7 +84,10 @@ class RadioThermostat(ThermostatDevice):
         self._operation = STATE_IDLE
         self._name = None
         self.hold_temp = hold_temp
+        self.away = False
+        self.away_delta = away_delta
         self.update()
+        self.old_temp = self.target_temperature
 
     @property
     def name(self):
@@ -113,6 +122,25 @@ class RadioThermostat(ThermostatDevice):
         """ Returns the temperature we try to reach. """
 
         return round(self._target_temperature, 1)
+
+    @property
+    def is_away_mode_on(self):
+        """ Returns if away mode is on. """
+        return self.away
+
+    def turn_away_mode_on(self):
+        """ Turns away on. """
+        self.away = True
+        self.old_temp = self.target_temperature
+        if self._operation == STATE_COOL:
+            self.set_temperature(self.old_temp + self.away_delta)
+        if self._operation == STATE_HEAT:
+            self.set_temperature(self.old_temp - self.away_delta)
+
+    def turn_away_mode_off(self):
+        """ Turns away off. """
+        self.away = False
+        self.set_temperature(self.old_temp)
 
     def update(self):
         self._current_temperature = self.device.temp['raw']
