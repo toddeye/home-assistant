@@ -143,13 +143,22 @@ class RadioThermostat(ThermostatDevice):
         self.set_temperature(self.old_temp)
 
     def update(self):
+        # sync entity state with device
         self._current_temperature = self.device.temp['raw']
         self._name = self.device.name['raw']
         if self.device.tmode['human'] == 'Cool':
-            self._target_temperature = self.device.t_cool['raw']
+            tstat_temp = self.device.t_cool['raw']
+            if tstat_temp != self._target_temperature:
+                # target temp adjusted from unit
+                self.away = False
+                self._target_temperature = tstat_temp
             self._operation = STATE_COOL
         elif self.device.tmode['human'] == 'Heat':
-            self._target_temperature = self.device.t_heat['raw']
+            tstat_temp = self.device.t_heat['raw']
+            if tstat_temp != self._target_temperature:
+                # target temp adjusted from unit
+                self.away = False
+                self._target_temperature = tstat_temp
             self._operation = STATE_HEAT
         else:
             self._operation = STATE_IDLE
@@ -164,6 +173,7 @@ class RadioThermostat(ThermostatDevice):
             self.device.hold = 1
         else:
             self.device.hold = 0
+        self._target_temperature = temperature
 
     def set_time(self):
         """ Set device time """
