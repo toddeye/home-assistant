@@ -1,39 +1,11 @@
 """
 homeassistant.components.media_player.squeezebox
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Provides an interface to the Logitech SqueezeBox API
 
-Configuration:
-
-To use SqueezeBox add something something like the following to your
-configuration.yaml file.
-
-media_player:
-  platform: squeezebox
-  host: 192.168.1.21
-  port: 9090
-  username: user
-  password: password
-
-Variables:
-
-host
-*Required
-The host name or address of the Logitech Media Server.
-
-port
-*Optional
-Telnet port to Logitech Media Server, default 9090.
-
-usermame
-*Optional
-Username, if password protection is enabled.
-
-password
-*Optional
-Password, if password protection is enabled.
+For more details about this platform, please refer to the documentation at
+https://home-assistant.io/components/media_player.squeezebox/
 """
-
 import logging
 import telnetlib
 import urllib.parse
@@ -50,9 +22,9 @@ from homeassistant.const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-SUPPORT_SQUEEZEBOX = SUPPORT_PAUSE | SUPPORT_VOLUME_SET | SUPPORT_VOLUME_MUTE |\
-    SUPPORT_PREVIOUS_TRACK | SUPPORT_NEXT_TRACK | SUPPORT_SEEK |\
-    SUPPORT_TURN_ON | SUPPORT_TURN_OFF
+SUPPORT_SQUEEZEBOX = SUPPORT_PAUSE | SUPPORT_VOLUME_SET | \
+    SUPPORT_VOLUME_MUTE | SUPPORT_PREVIOUS_TRACK | SUPPORT_NEXT_TRACK | \
+    SUPPORT_SEEK | SUPPORT_TURN_ON | SUPPORT_TURN_OFF
 
 
 # pylint: disable=unused-argument
@@ -201,7 +173,7 @@ class SqueezeBoxDevice(MediaPlayerDevice):
     def volume_level(self):
         """ Volume level of the media player (0..1). """
         if 'mixer volume' in self._status:
-            return int(self._status['mixer volume']) / 100.0
+            return int(float(self._status['mixer volume'])) / 100.0
 
     @property
     def is_volume_muted(self):
@@ -230,11 +202,10 @@ class SqueezeBoxDevice(MediaPlayerDevice):
         """ Image url of current playing media. """
         if 'artwork_url' in self._status:
             return self._status['artwork_url']
-        return 'http://{server}:{port}/music/current/cover.jpg?player={player}'\
-            .format(
-                server=self._lms.host,
-                port=self._lms.http_port,
-                player=self._id)
+        return ('http://{server}:{port}/music/current/cover.jpg?'
+                'player={player}').format(server=self._lms.host,
+                                          port=self._lms.http_port,
+                                          player=self._id)
 
     @property
     def media_title(self):

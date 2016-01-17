@@ -5,7 +5,7 @@ Device tracker platform that supports scanning a Netgear router for device
 presence.
 
 For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/device_tracker.netgear.html
+https://home-assistant.io/components/device_tracker.netgear/
 """
 import logging
 from datetime import timedelta
@@ -19,7 +19,7 @@ from homeassistant.components.device_tracker import DOMAIN
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=5)
 
 _LOGGER = logging.getLogger(__name__)
-REQUIREMENTS = ['pynetgear==0.3']
+REQUIREMENTS = ['pynetgear==0.3.1']
 
 
 def get_scanner(hass, config):

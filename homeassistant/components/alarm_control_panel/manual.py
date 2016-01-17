@@ -4,7 +4,7 @@ homeassistant.components.alarm_control_panel.manual
 Support for manual alarms.
 
 For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/alarm_control_panel.manual.html
+https://home-assistant.io/components/alarm_control_panel.manual/
 """
 import logging
 import datetime
@@ -17,8 +17,6 @@ from homeassistant.const import (
     STATE_ALARM_PENDING, STATE_ALARM_TRIGGERED)
 
 _LOGGER = logging.getLogger(__name__)
-
-DEPENDENCIES = []
 
 DEFAULT_ALARM_NAME = 'HA Alarm'
 DEFAULT_PENDING_TIME = 60
@@ -70,7 +68,8 @@ class ManualAlarm(alarm.AlarmControlPanel):
     @property
     def state(self):
         """ Returns the state of the device. """
-        if self._state in (STATE_ALARM_ARMED_HOME, STATE_ALARM_ARMED_AWAY) and \
+        if self._state in (STATE_ALARM_ARMED_HOME,
+                           STATE_ALARM_ARMED_AWAY) and \
            self._pending_time and self._state_ts + self._pending_time > \
            dt_util.utcnow():
             return STATE_ALARM_PENDING

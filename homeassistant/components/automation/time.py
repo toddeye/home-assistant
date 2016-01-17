@@ -4,7 +4,7 @@ homeassistant.components.automation.time
 Offers time listening automation rules.
 
 For more details about this automation rule, please refer to the documentation
-at https://home-assistant.io/components/automation.html#time-trigger
+at https://home-assistant.io/components/automation/#time-trigger
 """
 import logging
 
@@ -32,8 +32,8 @@ def trigger(hass, config, action):
             _error_time(config[CONF_AFTER], CONF_AFTER)
             return False
         hours, minutes, seconds = after.hour, after.minute, after.second
-    elif (CONF_HOURS in config or CONF_MINUTES in config
-          or CONF_SECONDS in config):
+    elif (CONF_HOURS in config or CONF_MINUTES in config or
+          CONF_SECONDS in config):
         hours = convert(config.get(CONF_HOURS), int)
         minutes = convert(config.get(CONF_MINUTES), int)
         seconds = convert(config.get(CONF_SECONDS), int)

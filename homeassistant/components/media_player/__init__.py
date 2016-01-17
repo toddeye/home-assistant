@@ -1,8 +1,10 @@
 """
 homeassistant.components.media_player
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 Component to interface with various media players.
+
+For more details about this component, please refer to the documentation at
+https://home-assistant.io/components/media_player/
 """
 import logging
 import os
@@ -20,7 +22,6 @@ from homeassistant.const import (
     SERVICE_MEDIA_NEXT_TRACK, SERVICE_MEDIA_PREVIOUS_TRACK, SERVICE_MEDIA_SEEK)
 
 DOMAIN = 'media_player'
-DEPENDENCIES = []
 SCAN_INTERVAL = 10
 
 ENTITY_ID_FORMAT = DOMAIN + '.{}'
@@ -28,6 +29,7 @@ ENTITY_ID_FORMAT = DOMAIN + '.{}'
 DISCOVERY_PLATFORMS = {
     discovery.SERVICE_CAST: 'cast',
     discovery.SERVICE_SONOS: 'sonos',
+    discovery.SERVICE_PLEX: 'plex',
 }
 
 SERVICE_YOUTUBE_VIDEO = 'play_youtube_video'
@@ -70,6 +72,7 @@ SUPPORT_YOUTUBE = 64
 SUPPORT_TURN_ON = 128
 SUPPORT_TURN_OFF = 256
 SUPPORT_PLAY_MEDIA = 512
+SUPPORT_VOLUME_STEP = 1024
 
 YOUTUBE_COVER_URL_FORMAT = 'https://img.youtube.com/vi/{}/1.jpg'
 

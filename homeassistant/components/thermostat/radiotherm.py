@@ -1,32 +1,8 @@
 """
 homeassistant.components.thermostat.radiotherm
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Adds support for Radio Thermostat wifi-enabled home thermostats
 
-Config:
-thermostat:
-    platform: radiotherm
-    hold_temp: boolean to control if hass temp adjustments hold(True) or are
-        temporary(False) (default: False)
-    away_delta: number of degrees to change target temperature  when 'away'
-        (default: 10)
-    host: list of thermostat host/ips to control
-
-Example:
-thermostat:
-    platform: radiotherm
-    hold_temp: True
-    away_delta: 5
-    host:
-        - 192.168.99.137
-        - 192.168.99.202
-
-Configure two thermostats via the configuration.yaml.  Temperature settings
-sent from hass will be sent to thermostat and then hold at that temp.  Set
-to False if you set a thermostat schedule on the tstat itself and just want
-hass to send temporary temp changes.  If Away mode is triggered, change target
-temp by 5 degrees.
-
+For more details about this platform, please refer to the documentation at
+https://home-assistant.io/components/thermostat.radiotherm/
 """
 import logging
 import datetime
@@ -37,16 +13,20 @@ from homeassistant.components.thermostat import (ThermostatDevice, STATE_COOL,
 from homeassistant.const import (CONF_HOST, TEMP_FAHRENHEIT)
 
 REQUIREMENTS = ['radiotherm==1.2']
-
 HOLD_TEMP = 'hold_temp'
 AWAY_DELTA = 'away_delta'
+_LOGGER = logging.getLogger(__name__)
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """ Sets up the Radio Thermostat. """
-    import radiotherm
-
-    logger = logging.getLogger(__name__)
+    try:
+        import radiotherm
+    except ImportError:
+        _LOGGER.exception(
+            "Unable to import radiotherm. "
+            "Did you maybe not install the 'radiotherm' package?")
+        return False
 
     hosts = []
     if CONF_HOST in config:
@@ -55,8 +35,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         hosts.append(radiotherm.discover.discover_address())
 
     if hosts is None:
-        logger.error("no radiotherm thermostats detected")
-        return
+        _LOGGER.error("No radiotherm thermostats detected.")
+        return False
 
     hold_temp = config.get(HOLD_TEMP, False)
     away_delta = config.get(AWAY_DELTA, 10)
@@ -67,8 +47,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
             tstat = radiotherm.get_thermostat(host)
             tstats.append(RadioThermostat(tstat, hold_temp, away_delta))
         except (URLError, OSError):
-            logger.exception(
-                "Unable to connect to Radio Thermostat: %s", host)
+            _LOGGER.exception("Unable to connect to Radio Thermostat: %s",
+                              host)
 
     add_devices(tstats)
 
@@ -143,7 +123,7 @@ class RadioThermostat(ThermostatDevice):
         self.set_temperature(self.old_temp)
 
     def update(self):
-        # sync entity state with device
+        """ Update the data from the thermostat. """
         self._current_temperature = self.device.temp['raw']
         self._name = self.device.name['raw']
         if self.device.tmode['human'] == 'Cool':

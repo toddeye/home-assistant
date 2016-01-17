@@ -5,7 +5,7 @@ Device tracker platform that supports scanning a TP-Link router for device
 presence.
 
 For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/device_tracker.tplink.html
+https://home-assistant.io/components/device_tracker.tplink/
 """
 import base64
 import logging
@@ -242,8 +242,8 @@ class Tplink3DeviceScanner(TplinkDeviceScanner):
 
             _LOGGER.info("Loading wireless clients...")
 
-            url = 'http://{}/cgi-bin/luci/;stok={}/admin/wireless?form=statistics' \
-                .format(self.host, self.stok)
+            url = ('http://{}/cgi-bin/luci/;stok={}/admin/wireless?'
+                   'form=statistics').format(self.host, self.stok)
             referer = 'http://{}/webpages/index.html'.format(self.host)
 
             response = requests.post(url,
