@@ -12,10 +12,16 @@ from homeassistant.components.switch import SwitchDevice
 from homeassistant.const import (
     STATE_ON, STATE_OFF, STATE_STANDBY, EVENT_HOMEASSISTANT_STOP)
 
-REQUIREMENTS = ['pywemo==0.3.8']
+REQUIREMENTS = ['pywemo==0.3.9']
 _LOGGER = logging.getLogger(__name__)
 
 _WEMO_SUBSCRIPTION_REGISTRY = None
+
+ATTR_SENSOR_STATE = "sensor_state"
+ATTR_SWITCH_MODE = "switch_mode"
+
+MAKER_SWITCH_MOMENTARY = "momentary"
+MAKER_SWITCH_TOGGLE = "toggle"
 
 
 # pylint: disable=unused-argument, too-many-function-args
@@ -89,6 +95,26 @@ class WemoSwitch(SwitchDevice):
         return self.wemo.name
 
     @property
+    def device_state_attributes(self):
+        attr = {}
+        if self.maker_params:
+            # Is the maker sensor on or off.
+            if self.maker_params['hassensor']:
+                # Note a state of 1 matches the WeMo app 'not triggered'!
+                if self.maker_params['sensorstate']:
+                    attr[ATTR_SENSOR_STATE] = STATE_OFF
+                else:
+                    attr[ATTR_SENSOR_STATE] = STATE_ON
+
+            # Is the maker switch configured as toggle(0) or momentary (1).
+            if self.maker_params['switchmode']:
+                attr[ATTR_SWITCH_MODE] = MAKER_SWITCH_MOMENTARY
+            else:
+                attr[ATTR_SWITCH_MODE] = MAKER_SWITCH_TOGGLE
+
+        return attr
+
+    @property
     def state(self):
         """ Returns the state. """
         is_on = self.is_on
@@ -123,31 +149,21 @@ class WemoSwitch(SwitchDevice):
                 return True
 
     @property
-    def sensor_state(self):
-        """ Is the sensor on or off. """
-        if self.maker_params and self.has_sensor:
-            # Note a state of 1 matches the WeMo app 'not triggered'!
-            if self.maker_params['sensorstate']:
-                return STATE_OFF
-            else:
-                return STATE_ON
-
-    @property
-    def switch_mode(self):
-        """ Is the switch configured as toggle(0) or momentary (1). """
-        if self.maker_params:
-            return self.maker_params['switchmode']
-
-    @property
-    def has_sensor(self):
-        """ Is the sensor present? """
-        if self.maker_params:
-            return self.maker_params['hassensor']
-
-    @property
     def is_on(self):
         """ True if switch is on. """
         return self.wemo.get_state()
+
+    @property
+    def available(self):
+        """ True if switch is available. """
+        if (self.wemo.model_name == 'Insight' and
+                self.insight_params is None):
+            return False
+
+        if (self.wemo.model_name == 'Maker' and
+                self.maker_params is None):
+            return False
+        return True
 
     def turn_on(self, **kwargs):
         """ Turns the switch on. """
