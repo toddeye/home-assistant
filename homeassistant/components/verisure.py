@@ -8,27 +8,24 @@ https://home-assistant.io/components/verisure/
 """
 import logging
 import time
-
 from datetime import timedelta
 
 from homeassistant import bootstrap
-from homeassistant.loader import get_component
-
-from homeassistant.helpers import validate_config
-from homeassistant.util import Throttle
 from homeassistant.const import (
-    EVENT_PLATFORM_DISCOVERED,
-    ATTR_SERVICE, ATTR_DISCOVERED,
-    CONF_USERNAME, CONF_PASSWORD)
-
+    ATTR_DISCOVERED, ATTR_SERVICE, CONF_PASSWORD, CONF_USERNAME,
+    EVENT_PLATFORM_DISCOVERED)
+from homeassistant.helpers import validate_config
+from homeassistant.loader import get_component
+from homeassistant.util import Throttle
 
 DOMAIN = "verisure"
 DISCOVER_SENSORS = 'verisure.sensors'
 DISCOVER_SWITCHES = 'verisure.switches'
 DISCOVER_ALARMS = 'verisure.alarm_control_panel'
+DISCOVER_LOCKS = 'verisure.lock'
 
 DEPENDENCIES = ['alarm_control_panel']
-REQUIREMENTS = ['vsure==0.5.0']
+REQUIREMENTS = ['vsure==0.5.1']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +33,8 @@ MY_PAGES = None
 ALARM_STATUS = {}
 SMARTPLUG_STATUS = {}
 CLIMATE_STATUS = {}
+LOCK_STATUS = {}
+MOUSEDETECTION_STATUS = {}
 
 VERISURE_LOGIN_ERROR = None
 VERISURE_ERROR = None
@@ -44,6 +43,8 @@ SHOW_THERMOMETERS = True
 SHOW_HYGROMETERS = True
 SHOW_ALARM = True
 SHOW_SMARTPLUGS = True
+SHOW_LOCKS = True
+SHOW_MOUSEDETECTION = True
 CODE_DIGITS = 4
 
 # if wrong password was given don't try again
@@ -63,11 +64,14 @@ def setup(hass, config):
     from verisure import MyPages, LoginError, Error
 
     global SHOW_THERMOMETERS, SHOW_HYGROMETERS,\
-        SHOW_ALARM, SHOW_SMARTPLUGS, CODE_DIGITS
+        SHOW_ALARM, SHOW_SMARTPLUGS, SHOW_LOCKS, SHOW_MOUSEDETECTION,\
+        CODE_DIGITS
     SHOW_THERMOMETERS = int(config[DOMAIN].get('thermometers', '1'))
     SHOW_HYGROMETERS = int(config[DOMAIN].get('hygrometers', '1'))
     SHOW_ALARM = int(config[DOMAIN].get('alarm', '1'))
     SHOW_SMARTPLUGS = int(config[DOMAIN].get('smartplugs', '1'))
+    SHOW_LOCKS = int(config[DOMAIN].get('locks', '1'))
+    SHOW_MOUSEDETECTION = int(config[DOMAIN].get('mouse', '1'))
     CODE_DIGITS = int(config[DOMAIN].get('code_digits', '4'))
 
     global MY_PAGES
@@ -87,11 +91,14 @@ def setup(hass, config):
     update_alarm()
     update_climate()
     update_smartplug()
+    update_lock()
+    update_mousedetection()
 
     # Load components for the devices in the ISY controller that we support
     for comp_name, discovery in ((('sensor', DISCOVER_SENSORS),
                                   ('switch', DISCOVER_SWITCHES),
-                                  ('alarm_control_panel', DISCOVER_ALARMS))):
+                                  ('alarm_control_panel', DISCOVER_ALARMS),
+                                  ('lock', DISCOVER_LOCKS))):
         component = get_component(comp_name)
         _LOGGER.info(config[DOMAIN])
         bootstrap.setup_component(hass, component.DOMAIN, config)
@@ -134,6 +141,16 @@ def update_smartplug():
     update_component(MY_PAGES.smartplug.get, SMARTPLUG_STATUS)
 
 
+def update_lock():
+    """ Updates the status of alarms. """
+    update_component(MY_PAGES.lock.get, LOCK_STATUS)
+
+
+def update_mousedetection():
+    """ Updates the status of mouse detectors. """
+    update_component(MY_PAGES.mousedetection.get, MOUSEDETECTION_STATUS)
+
+
 def update_component(get_function, status):
     """ Updates the status of verisure components. """
     if WRONG_PASSWORD_GIVEN:
@@ -141,7 +158,10 @@ def update_component(get_function, status):
         return
     try:
         for overview in get_function():
-            status[overview.id] = overview
+            try:
+                status[overview.id] = overview
+            except AttributeError:
+                status[overview.deviceLabel] = overview
     except (ConnectionError, VERISURE_ERROR) as ex:
         _LOGGER.error('Caught connection error %s, tries to reconnect', ex)
         reconnect()

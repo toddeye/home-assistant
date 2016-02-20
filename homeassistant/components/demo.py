@@ -6,11 +6,10 @@ Sets up a demo environment that mimics interaction with devices.
 """
 import time
 
-import homeassistant.core as ha
 import homeassistant.bootstrap as bootstrap
+import homeassistant.core as ha
 import homeassistant.loader as loader
-from homeassistant.const import (
-    CONF_PLATFORM, ATTR_ENTITY_ID)
+from homeassistant.const import ATTR_ENTITY_ID, CONF_PLATFORM
 
 DOMAIN = "demo"
 
@@ -21,6 +20,7 @@ COMPONENTS_WITH_DEMO_PLATFORM = [
     'binary_sensor',
     'camera',
     'device_tracker',
+    'garage_door',
     'light',
     'lock',
     'media_player',

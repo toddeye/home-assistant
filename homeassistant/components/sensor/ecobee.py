@@ -8,9 +8,9 @@ https://home-assistant.io/components/sensor.ecobee/
 """
 import logging
 
-from homeassistant.helpers.entity import Entity
 from homeassistant.components import ecobee
 from homeassistant.const import TEMP_FAHRENHEIT
+from homeassistant.helpers.entity import Entity
 
 DEPENDENCIES = ['ecobee']
 SENSOR_TYPES = {
@@ -62,6 +62,11 @@ class EcobeeSensor(Entity):
     def state(self):
         """ Returns the state of the device. """
         return self._state
+
+    @property
+    def unique_id(self):
+        """Unique id of this sensor."""
+        return "sensor_ecobee_{}_{}".format(self._name, self.index)
 
     @property
     def unit_of_measurement(self):
