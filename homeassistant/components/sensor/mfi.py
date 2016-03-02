@@ -1,12 +1,12 @@
 """
-homeassistant.components.sensor.mfi
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Support for Ubiquiti mFi sensors.
 
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/sensor.mfi/
 """
 import logging
+
+import requests
 
 from homeassistant.components.sensor import DOMAIN
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, TEMP_CELCIUS
@@ -36,8 +36,7 @@ SENSOR_MODELS = [
 
 # pylint: disable=unused-variable
 def setup_platform(hass, config, add_devices, discovery_info=None):
-    """ Sets up mFi sensors. """
-
+    """Sets up mFi sensors."""
     if not validate_config({DOMAIN: config},
                            {DOMAIN: ['host',
                                      CONF_USERNAME,
@@ -51,11 +50,11 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     username = config.get(CONF_USERNAME)
     password = config.get(CONF_PASSWORD)
 
-    from mficlient.client import MFiClient
+    from mficlient.client import FailedToLogin, MFiClient
 
     try:
         client = MFiClient(host, username, password, port=port)
-    except client.FailedToLogin as ex:
+    except (FailedToLogin, requests.exceptions.ConnectionError) as ex:
         _LOGGER.error('Unable to connect to mFi: %s', str(ex))
         return False
 
@@ -66,7 +65,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
 
 class MfiSensor(Entity):
-    """ An mFi sensor that exposes tag=value. """
+    """An mFi sensor that exposes tag=value."""
 
     def __init__(self, port, hass):
         self._port = port
@@ -74,10 +73,12 @@ class MfiSensor(Entity):
 
     @property
     def name(self):
+        """Returns the name of th sensor."""
         return self._port.label
 
     @property
     def state(self):
+        """Returns the state of the sensor."""
         if self._port.model == 'Input Digital':
             return self._port.value > 0 and STATE_ON or STATE_OFF
         else:
@@ -86,6 +87,7 @@ class MfiSensor(Entity):
 
     @property
     def unit_of_measurement(self):
+        """Unit of measurement of this entity, if any."""
         if self._port.tag == 'temperature':
             return TEMP_CELCIUS
         elif self._port.tag == 'active_pwr':
@@ -95,4 +97,5 @@ class MfiSensor(Entity):
         return self._port.tag
 
     def update(self):
+        """Gets the latest data."""
         self._port.refresh()
